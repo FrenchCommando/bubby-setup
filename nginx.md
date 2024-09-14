@@ -3,3 +3,38 @@ install nginx and certbot - this is to setup and renew SSL certificates (I would
 ```bash
 sudo certbot --nginx
 ```
+
+
+
+## What is my config?
+
+```bash
+cat /etc/nginx/nginx.conf
+```
+
+```txt
+include /etc/nginx/modules-enabled/*.conf;
+include /etc/nginx/conf.d/*.conf;
+include /etc/nginx/sites-enabled/*;  ## this is where you put everything
+```
+
+### What's in `/etc/nginx/sites-enabled/toto` ? 
+here's the boilerplate
+
+(amazing .md recognizes `nginx` ???)
+
+
+```nginx
+server {
+  server_name frenchcommando.com;   # can put many servers here
+  location / {
+    root /home/frenchcommando/homepage/;
+    index index.html;
+  }
+}
+```
+
+next up ? make a flask server
+
+
+
