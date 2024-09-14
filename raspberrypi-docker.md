@@ -14,6 +14,7 @@ https://pimylifeup.com/raspberry-pi-docker/
 curl -sSL https://get.docker.com | sh
 ```
 
+(otherwise need `sudo` everytime we call `docker` - it's a choice, but I didn't know I made that choice when I made it)
 I did actually need this one:
 ```bash
 sudo usermod -aG docker $USER
