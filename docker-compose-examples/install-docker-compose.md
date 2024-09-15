@@ -1,5 +1,8 @@
 nothing I guess?
 
+```bash
+sudo apt install docker-compose
+```
 
 - no version on top, and use `compose.yml`
 
