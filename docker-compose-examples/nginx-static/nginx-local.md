@@ -1,3 +1,5 @@
+### forward nginx ports
+
 need to add this to nginx configurations
 
 ```nginx
@@ -15,3 +17,12 @@ server {
 }
 ```
 https://stackoverflow.com/questions/70385932/nginx-redirect-domain-to-localhostport-content
+
+
+### servername size error
+
+uncomment this in `/etc/nginx/nginx.conf`
+
+```nginx
+# server_names_hash_bucket_size 64;
+```
