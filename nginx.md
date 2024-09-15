@@ -5,7 +5,6 @@ sudo certbot --nginx
 ```
 
 
-
 ## What is my config?
 
 ```bash
@@ -37,4 +36,8 @@ server {
 next up ? make a flask server
 
 
+### Restart nginx after changes
 
+```bash
+sudo service nginx restart
+```
