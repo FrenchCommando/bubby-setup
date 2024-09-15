@@ -41,3 +41,10 @@ next up ? make a flask server
 ```bash
 sudo service nginx restart
 ```
+
+
+### make the file executable from windows
+
+```bash
+git update-index --chmod=+x ".\docker-compose-examples\nginx-static\build_and_up.sh"
+```
