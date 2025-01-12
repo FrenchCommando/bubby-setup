@@ -1,0 +1,19 @@
+services:
+  nginx-aiohttp-service:
+    build: ./buzzer
+    restart: unless-stopped
+    net: host
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+    volume:
+      - ~/buzzer:/buzzerlog    
+    expose:
+      - 5000
+  nginx:
+    build: ./nginx
+    restart: always
+    ports:
+      - 1338:1338
+    depends_on:
+      - nginx-aiohttp-service
