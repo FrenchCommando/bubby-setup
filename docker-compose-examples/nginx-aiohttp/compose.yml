@@ -2,7 +2,6 @@ services:
   nginx-aiohttp-service:
     build: ./buzzer
     restart: unless-stopped
-    net: host
     cap_add:
       - NET_ADMIN
       - SYS_ADMIN
