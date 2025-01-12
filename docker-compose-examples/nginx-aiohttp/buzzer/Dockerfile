@@ -1,4 +1,4 @@
-FROM python:3
+FROM python:3.7-buster
 COPY authorized_emails.txt /
 COPY devices.txt /
 COPY requirements.txt /
