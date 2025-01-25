@@ -13,6 +13,6 @@ services:
     build: ./nginx
     restart: always
     ports:
-      - 1338:1338
+      - 1338:80
     depends_on:
       - nginx-aiohttp-service

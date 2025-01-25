@@ -15,7 +15,7 @@ import google_auth_oauthlib.flow
 import google.auth.transport.requests
 from google.oauth2 import id_token
 from pip._vendor import cachecontrol
-from gattlib import GATTRequester
+# from gattlib import GATTRequester
 
 
 log_file = os.path.join('buzzerlog', 'buzzer.log')
@@ -160,18 +160,18 @@ async def open_door(request: web.Request) -> Dict[str, Any]:
     logger.info("Opening door")
     for device in devices:
         logger.info(device)
-        req = GATTRequester(device, False)
-        logger.info("Pre-Connect")
-        req.connect(False, 'random')
+        # req = GATTRequester(device, False)
+        # logger.info("Pre-Connect")
+        # req.connect(False, 'random')
         n_remaining = 10
         while n_remaining > 0:
             logger.info("Pre-sleep")
             time.sleep(1)
-            if req.is_connected():
-                req.write_by_handle(0x16, b'\x57\x01\x00')
-                logger.info("Message Sent")
-                req.disconnect()
-                break
+            # if req.is_connected():
+            #     req.write_by_handle(0x16, b'\x57\x01\x00')
+            #     logger.info("Message Sent")
+            #     req.disconnect()
+            #     break
             n_remaining -= 1
     logger.info('Command execution successful')
     return {}
@@ -191,4 +191,4 @@ async def init_app() -> web.Application:
 
 
 if __name__ == '__main__':
-    web.run_app(init_app(), port=1338)
+    web.run_app(init_app(), port=5000)

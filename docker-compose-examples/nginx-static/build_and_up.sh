@@ -1,8 +1,10 @@
 #!/bin/sh
 
-cp nginxstaticexample /etc/nginx/sites-enabled
+# don't do it every time - will override certbot configs
+# cp nginxstaticexample /etc/nginx/sites-enabled
 
-git pull
+# that not great practice
+# git pull
 
 sudo docker compose build
 sudo docker compose down
