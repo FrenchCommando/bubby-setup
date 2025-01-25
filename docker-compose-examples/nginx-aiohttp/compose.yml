@@ -1,5 +1,5 @@
 services:
-  nginx-aiohttp-service:
+  nginx_aiohttp_service:
     build: ./buzzer
     restart: unless-stopped
     cap_add:
@@ -15,4 +15,4 @@ services:
     ports:
       - 1338:80
     depends_on:
-      - nginx-aiohttp-service
+      - nginx_aiohttp_service
