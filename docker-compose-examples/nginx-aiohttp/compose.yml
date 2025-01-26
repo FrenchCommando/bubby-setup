@@ -2,9 +2,10 @@ services:
   nginx_aiohttp_service:
     build: ./buzzer
     restart: unless-stopped
-    cap_add:
-      - NET_ADMIN
-      - SYS_ADMIN
+    privileged: true
+    network_mode: host
+    devices:
+      - "/dev/bus/usb"
     volumes:
       - ~/buzzer:/buzzerlog    
     expose:
