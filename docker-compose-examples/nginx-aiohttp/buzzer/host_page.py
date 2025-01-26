@@ -108,7 +108,7 @@ async def login_apply(request: web.Request):
         client_secrets_file=client_secrets_file,
         scopes=SCOPES
     )
-    flow.redirect_uri = 'http://localhost:5000/callback'
+    flow.redirect_uri = redirect_uri_static
     authorization_url, state = flow.authorization_url(
         # Enable offline access so that you can refresh an access token without
         # re-prompting the user for permission. Recommended for web server apps.
@@ -140,7 +140,7 @@ async def callback(request: web.Request):
         scopes=SCOPES,
         state=state,
     )
-    flow.redirect_uri = 'http://localhost:5000/callback'
+    flow.redirect_uri = redirect_uri_static
 
     flow.fetch_token(code=request.rel_url.query.get("code", None))
     credentials = flow.credentials
