@@ -1,9 +1,4 @@
 services:
-  bluetooth-service:
-    image: bluez-image
-    privileged: true
-    networks:
-      - bluetooth-network
   nginx_aiohttp_service:
     build: ./buzzer
     restart: unless-stopped
