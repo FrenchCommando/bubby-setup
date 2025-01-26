@@ -9,7 +9,6 @@ import aiohttp_session
 import jinja2
 from pathlib import Path
 from typing import Callable, Awaitable, Dict, Any
-from gattlib import GATTRequester
 from google.oauth2.credentials import Credentials
 import google_auth_oauthlib.flow
 from googleapiclient.discovery import build
@@ -26,8 +25,6 @@ logger.info("Logger is setup")
 # redirect_uri_static = 'http://localhost:5000/callback'
 redirect_uri_static = 'https://shitified.com/callback'
 
-with open(str(Path(__file__).parent / "devices.txt")) as f:
-    devices = f.readlines()
 with open(str(Path(__file__).parent / "authorized_emails.txt")) as f:
     authorized_emails = [s.strip() for s in f.readlines()]
 
@@ -181,21 +178,6 @@ async def greet_user(request: web.Request) -> Dict[str, Any]:
 @aiohttp_jinja2.template("target.html")
 async def open_door(request: web.Request) -> Dict[str, Any]:
     logger.info("Opening door")
-    for device in devices:
-        logger.info(device)
-        req = GATTRequester(device, False)
-        logger.info("Pre-Connect")
-        req.connect(False, 'random')
-        n_remaining = 10
-        while n_remaining > 0:
-            logger.info("Pre-sleep")
-            time.sleep(1)
-            if req.is_connected():
-                req.write_by_handle(0x16, b'\x57\x01\x00')
-                logger.info("Message Sent")
-                req.disconnect()
-                break
-            n_remaining -= 1
     logger.info('Command execution successful')
     return {}
 
