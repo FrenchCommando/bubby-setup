@@ -187,10 +187,10 @@ async def open_door(request: web.Request) -> Dict[str, Any]:
     logger.info("Opening door")
     target_port = os.environ.get("TARGET_PORT", None)
     if target_port is not None:
-        session = await aiohttp_session.get_session(request)
-        async with session.get(f'http://locahost:{target_port}') as resp:
-            logger.info(resp.status)
-            logger.info(await resp.text())
+        async with aiohttp.ClientSession() as session2:
+            async with session2.get(f'http://locahost:{target_port}') as resp:
+                logger.info(resp.status)
+                logger.info(await resp.text())
     logger.info('Command execution successful')
     return {}
 
