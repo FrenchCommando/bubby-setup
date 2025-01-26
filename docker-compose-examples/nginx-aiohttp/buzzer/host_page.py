@@ -2,7 +2,6 @@ import aiohttp
 import logging
 import os
 import pathlib
-import requests
 import time
 from aiohttp import web
 import aiohttp_jinja2
@@ -10,12 +9,11 @@ import aiohttp_session
 import jinja2
 from pathlib import Path
 from typing import Callable, Awaitable, Dict, Any
-import google.oauth2.credentials
-import google_auth_oauthlib.flow
-import google.auth.transport.requests
-from google.oauth2 import id_token
-from pip._vendor import cachecontrol
 # from gattlib import GATTRequester
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
 
 
 log_file = os.path.join('buzzerlog', 'buzzer.log')
@@ -31,26 +29,8 @@ with open(str(Path(__file__).parent / "devices.txt")) as f:
 with open(str(Path(__file__).parent / "authorized_emails.txt")) as f:
     authorized_emails = [s.strip() for s in f.readlines()]
 
-
+SCOPES = ['profile', 'email']
 client_secrets_file = os.path.join(pathlib.Path(__file__).parent, "client_secret.json")
-flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
-    client_secrets_file=client_secrets_file,
-    scopes=[
-        "https://www.googleapis.com/auth/userinfo.profile",
-        "https://www.googleapis.com/auth/userinfo.email",
-        "openid",
-    ],
-    redirect_uri="http://localhost/callback",
-)
-
-authorization_url, state = flow.authorization_url(
-    # Enable offline access so that you can refresh an access token without
-    # re-prompting the user for permission. Recommended for web server apps.
-    access_type='offline',
-    # Enable incremental authorization. Recommended as a best practice.
-    include_granted_scopes='true',
-)
-
 router = web.RouteTableDef()
 _WebHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
 
@@ -91,37 +71,59 @@ async def login_apply(request: web.Request):
     logger.info("Requesting login")
     session = await aiohttp_session.get_session(request)
     logger.info("Requesting session")
-    authorization_url_value, state = flow.authorization_url()
+
+    creds = None
+    # The file token.json stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+    if os.path.exists("token.json"):
+        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                "client_secret.json", SCOPES
+            )
+            creds = flow.run_local_server(port=0)
+        # Save the credentials for the next run
+        with open("token.json", "w") as token:
+            token.write(creds.to_json())
+
+    authorization_url, state = flow.authorization_url(
+        # Enable offline access so that you can refresh an access token without
+        # re-prompting the user for permission. Recommended for web server apps.
+        access_type='offline',
+        # Enable incremental authorization. Recommended as a best practice.
+        include_granted_scopes='true')
+
+    # Store the state so the callback can verify the auth server response.
+    session['state'] = state
+
     logger.info("Authorization Url end")
-    session["state"] = state
-    logger.info(f"Authorization Url {authorization_url_value}")
-    logger.info(f"Authorization Url {state}")
-    raise web.HTTPFound(authorization_url_value)
+    logger.info(f"Authorization Url {authorization_url}")
+    logger.info(f"Authorization state {state}")
+    raise web.HTTPFound(authorization_url)
 
 
 @router.get("/callback")
 async def callback(request: web.Request):
     logger.info("Running callback")
-    flow.fetch_token(code=request.rel_url.query.get("code", ''))
     session = await aiohttp_session.get_session(request)
-    if not session["state"] == request.rel_url.query.get("state", ''):
-        raise aiohttp.web.HTTPUnauthorized()
-
-    credentials = flow.credentials
-    request_session = requests.session()
-    cached_session = cachecontrol.CacheControl(request_session)
-    token_request = google.auth.transport.requests.Request(session=cached_session)
-
-    id_info = id_token.verify_oauth2_token(
-        id_token=credentials._id_token,
-        request=token_request,
-        audience=credentials.client_id,
+    flow = InstalledAppFlow.from_client_secrets_file(
+        'client_secrets.json',
+        scopes=['openid', 'https://www.googleapis.com/auth/userinfo.email',
+                'https://www.googleapis.com/auth/userinfo.profile']
     )
-
-    session["google_id"] = id_info.get("sub")
-    session["name"] = id_info.get("name")
-    session["username"] = session["name"]
-    session["email"] = id_info.get("email")
+    flow.run_local_server()
+    credentials = flow.credentials
+    user_info_service = build('oauth2', 'v2', credentials=credentials)
+    user_info = user_info_service.userinfo().get().execute()
+    session["google_id"] = user_info.get("sub")
+    session["name"] = user_info.get("name")
+    session["username"] = user_info["name"]
+    session["email"] = user_info.get("email")
 
     raise web.HTTPSeeOther(location="/")
 
