@@ -13,7 +13,6 @@ from google.oauth2.credentials import Credentials
 import google_auth_oauthlib.flow
 from googleapiclient.discovery import build
 
-
 log_file = os.path.join('buzzerlog', 'buzzer.log')
 # print(log_file)
 logging.basicConfig(filename=log_file, filemode='a+', level=logging.DEBUG)
@@ -186,6 +185,12 @@ async def greet_user(request: web.Request) -> Dict[str, Any]:
 @aiohttp_jinja2.template("target.html")
 async def open_door(request: web.Request) -> Dict[str, Any]:
     logger.info("Opening door")
+    target_port = os.environ.get("TARGET_PORT", None)
+    if target_port is not None:
+        session = await aiohttp_session.get_session(request)
+        async with session.get(f'http://locahost:{target_port}') as resp:
+            logger.info(resp.status)
+            logger.info(await resp.text())
     logger.info('Command execution successful')
     return {}
 

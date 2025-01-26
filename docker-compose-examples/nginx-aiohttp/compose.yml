@@ -3,7 +3,9 @@ services:
     build: ./buzzer
     restart: unless-stopped
     volumes:
-      - ~/buzzer:/buzzerlog    
+      - ~/buzzer:/buzzerlog
+    environment:
+      TARGET_PORT: 1340
     expose:
       - 5000
   nginx:
