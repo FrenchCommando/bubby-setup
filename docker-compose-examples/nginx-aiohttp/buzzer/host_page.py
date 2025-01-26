@@ -15,7 +15,6 @@ from google.oauth2.credentials import Credentials
 import google_auth_oauthlib.flow
 from googleapiclient.discovery import build
 
-# os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 log_file = os.path.join('buzzerlog', 'buzzer.log')
 # print(log_file)
@@ -24,6 +23,9 @@ logger = logging.getLogger("buzzer_app")
 logger.setLevel(logging.DEBUG)
 logger.info("Logger is setup")
 
+# os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+# redirect_uri_static = 'http://localhost:5000/callback'
+redirect_uri_static = 'https://shitified.com/callback'
 
 with open(str(Path(__file__).parent / "devices.txt")) as f:
     devices = f.readlines()
