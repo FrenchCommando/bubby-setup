@@ -4,5 +4,6 @@ aiohttp-jinja2
 google-api-python-client
 google-auth
 google-auth-httplib2
+google_auth_oauthlib
 jinja2
 requests
