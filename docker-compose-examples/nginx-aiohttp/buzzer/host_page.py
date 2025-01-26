@@ -56,8 +56,8 @@ async def check_login(
             raise web.HTTPSeeOther(location="/login")
 
         credentials = Credentials(**session['credentials'])
-        user_info_service = build('oauth2', 'v2', credentials=credentials)
         session['credentials'] = credentials_to_dict(credentials)
+        user_info_service = build('oauth2', 'v2', credentials=credentials)
         user_info = user_info_service.userinfo().get().execute()
         session["google_id"] = user_info.get("sub")
         session["name"] = user_info.get("name")
@@ -86,12 +86,14 @@ async def login(request: web.Request) -> Dict[str, Any]:
     return {}
 
 def credentials_to_dict(credentials):
-  return {'token': credentials.token,
-          'refresh_token': credentials.refresh_token,
-          'token_uri': credentials.token_uri,
-          'client_id': credentials.client_id,
-          'client_secret': credentials.client_secret,
-          'granted_scopes': credentials.granted_scopes}
+  return {
+      'token': credentials.token,
+      'refresh_token': credentials.refresh_token,
+      'token_uri': credentials.token_uri,
+      'client_id': credentials.client_id,
+      'client_secret': credentials.client_secret,
+      'granted_scopes': credentials.granted_scopes,
+  }
 
 
 @router.post("/login")
@@ -142,6 +144,12 @@ async def callback(request: web.Request):
     credentials = flow.credentials
 
     session['credentials'] = credentials_to_dict(credentials)
+    user_info_service = build('oauth2', 'v2', credentials=credentials)
+    user_info = user_info_service.userinfo().get().execute()
+    session["google_id"] = user_info.get("sub")
+    session["name"] = user_info.get("name")
+    session["username"] = user_info["name"]
+    session["email"] = user_info.get("email")
 
     raise web.HTTPSeeOther(location="/")
 
