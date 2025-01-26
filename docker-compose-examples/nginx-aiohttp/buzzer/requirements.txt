@@ -1,7 +1,6 @@
 aiohttp
 aiohttp-session
 aiohttp-jinja2
-gattlib
 google-api-python-client
 google-auth
 google-auth-oauthlib

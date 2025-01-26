@@ -8,6 +8,7 @@ RUN apt-get install -y pkg-config \
   libboost-python-dev \
   libboost-thread-dev \
   libbluetooth-dev \
+  libreadline-dev \
   libglib2.0-dev \
   python3-dev
 RUN pip install --upgrade pip
