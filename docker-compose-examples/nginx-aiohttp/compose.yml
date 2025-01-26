@@ -2,8 +2,6 @@ services:
   nginx_aiohttp_service:
     build: ./buzzer
     restart: unless-stopped
-    networks:
-      - bluetooth-network
     devices:
       - "/dev/bus/usb"
     volumes:
@@ -17,7 +15,3 @@ services:
       - 1338:1338
     depends_on:
       - nginx_aiohttp_service
-
-networks:
-  bluetooth-network:
-    driver: bridge
