@@ -12,12 +12,13 @@ from typing import Callable, Awaitable, Dict, Any
 # from gattlib import GATTRequester
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
+import google_auth_oauthlib.flow
 from googleapiclient.discovery import build
 
+# os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 log_file = os.path.join('buzzerlog', 'buzzer.log')
-print(log_file)
+# print(log_file)
 logging.basicConfig(filename=log_file, filemode='a+', level=logging.DEBUG)
 logger = logging.getLogger("buzzer_app")
 logger.setLevel(logging.DEBUG)
@@ -29,7 +30,11 @@ with open(str(Path(__file__).parent / "devices.txt")) as f:
 with open(str(Path(__file__).parent / "authorized_emails.txt")) as f:
     authorized_emails = [s.strip() for s in f.readlines()]
 
-SCOPES = ['profile', 'email']
+SCOPES = [
+    'https://www.googleapis.com/auth/userinfo.profile',
+    'openid',
+    'https://www.googleapis.com/auth/userinfo.email',
+]
 client_secrets_file = os.path.join(pathlib.Path(__file__).parent, "client_secret.json")
 router = web.RouteTableDef()
 _WebHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
@@ -46,10 +51,27 @@ async def check_login(
         handler: _WebHandler
 ) -> web.StreamResponse:
     require_login_variable = getattr(handler, "__require_login__", False)
-    session = await aiohttp_session.get_session(request)
-    username = session.get("username")
-    email = session.get("email")
     if require_login_variable:
+        session = await aiohttp_session.get_session(request)
+
+        if 'credentials' not in session:
+            raise web.HTTPSeeOther(location="/login")
+
+        credentials = Credentials(**session['credentials'])
+        user_info_service = build('oauth2', 'v2', credentials=credentials)
+        session['credentials'] = credentials_to_dict(credentials)
+        user_info = user_info_service.userinfo().get().execute()
+        session["google_id"] = user_info.get("sub")
+        session["name"] = user_info.get("name")
+        session["username"] = user_info["name"]
+        session["email"] = user_info.get("email")
+
+        # print(user_info)
+
+        username = session.get("username")
+        email = session.get("email")
+
+        # print(username, email)
         if not username:
             raise web.HTTPSeeOther(location="/login")
         else:
@@ -65,6 +87,14 @@ async def check_login(
 async def login(request: web.Request) -> Dict[str, Any]:
     return {}
 
+def credentials_to_dict(credentials):
+  return {'token': credentials.token,
+          'refresh_token': credentials.refresh_token,
+          'token_uri': credentials.token_uri,
+          'client_id': credentials.client_id,
+          'client_secret': credentials.client_secret,
+          'granted_scopes': credentials.granted_scopes}
+
 
 @router.post("/login")
 async def login_apply(request: web.Request):
@@ -72,38 +102,26 @@ async def login_apply(request: web.Request):
     session = await aiohttp_session.get_session(request)
     logger.info("Requesting session")
 
-    creds = None
-    # The file token.json stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists("token.json"):
-        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                "client_secret.json", SCOPES
-            )
-            creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
-        with open("token.json", "w") as token:
-            token.write(creds.to_json())
-
+    flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
+        client_secrets_file=client_secrets_file,
+        scopes=SCOPES
+    )
+    flow.redirect_uri = 'http://localhost:5000/callback'
     authorization_url, state = flow.authorization_url(
         # Enable offline access so that you can refresh an access token without
         # re-prompting the user for permission. Recommended for web server apps.
         access_type='offline',
         # Enable incremental authorization. Recommended as a best practice.
-        include_granted_scopes='true')
+        include_granted_scopes='true'
+    )
 
-    # Store the state so the callback can verify the auth server response.
+    # print(authorization_url)
+
     session['state'] = state
 
     logger.info("Authorization Url end")
-    logger.info(f"Authorization Url {authorization_url}")
-    logger.info(f"Authorization state {state}")
+    # logger.info(f"Authorization Url {authorization_url}")
+    # logger.info(f"Authorization state {state}")
     raise web.HTTPFound(authorization_url)
 
 
@@ -111,19 +129,21 @@ async def login_apply(request: web.Request):
 async def callback(request: web.Request):
     logger.info("Running callback")
     session = await aiohttp_session.get_session(request)
-    flow = InstalledAppFlow.from_client_secrets_file(
-        'client_secrets.json',
-        scopes=['openid', 'https://www.googleapis.com/auth/userinfo.email',
-                'https://www.googleapis.com/auth/userinfo.profile']
+    state = session['state']
+    # logger.info(f"Session state {state}")
+    # logger.info(f"Request Path {request.url.path}")
+    # logger.info(f"Request Code {request.rel_url.query.get("code", None)}")
+    flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
+        client_secrets_file=client_secrets_file,
+        scopes=SCOPES,
+        state=state,
     )
-    flow.run_local_server()
+    flow.redirect_uri = 'http://localhost:5000/callback'
+
+    flow.fetch_token(code=request.rel_url.query.get("code", None))
     credentials = flow.credentials
-    user_info_service = build('oauth2', 'v2', credentials=credentials)
-    user_info = user_info_service.userinfo().get().execute()
-    session["google_id"] = user_info.get("sub")
-    session["name"] = user_info.get("name")
-    session["username"] = user_info["name"]
-    session["email"] = user_info.get("email")
+
+    session['credentials'] = credentials_to_dict(credentials)
 
     raise web.HTTPSeeOther(location="/")
 
@@ -150,8 +170,8 @@ async def username_ctx_processor(request: web.Request) -> Dict[str, Any]:
 @aiohttp_jinja2.template("base.html")
 async def greet_user(request: web.Request) -> Dict[str, Any]:
     logger.info("Home Page")
-    print("Home")
-    print(f"{logger}")
+    # print("Home")
+    # print(f"{logger}")
     return {}
 
 
