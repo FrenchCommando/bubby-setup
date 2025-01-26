@@ -2,6 +2,9 @@ services:
   nginx_aiohttp_service:
     build: ./buzzer
     restart: unless-stopped
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
     devices:
       - "/dev/bus/usb"
     volumes:
